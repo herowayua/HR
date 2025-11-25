@@ -3,7 +3,14 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, where, orderBy, limit, addDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+
 import { geminiService } from './services/geminiService';
+import LiveSupportModule from './components/LiveSupportModule';
+import VeteranJobsModule from './components/VeteranJobsModule';
+import EdTechModule from './components/EdTechModule';
+import InterviewSimulator from './components/InterviewSimulator';
+import VeteranProfileModule from './components/VeteranProfileModule';
+import { audioUtils } from './utils/audioUtils';
 
 // Іконки Lucide Icons (використовуємо inline SVG як заглушку)
 const IconUser = (props) => (
@@ -54,6 +61,18 @@ const IconTrash = (props) => (
 );
 const IconMapPin = (props) => (
     <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+);
+const IconMic = (props) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" x2="12" y1="19" y2="22" /></svg>
+);
+const IconSave = (props) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>
+);
+const IconDownload = (props) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></svg>
+);
+const IconFileText = (props) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="16" x2="8" y1="13" y2="13" /><line x1="16" x2="8" y1="17" y2="17" /><line x1="10" x2="8" y1="9" y2="9" /></svg>
 );
 
 
@@ -317,367 +336,7 @@ const AiRecruiterModule = ({ setCurrentView, userId }) => {
     );
 };
 
-// --- КОМПОНЕНТ VETERAN JOBS (НОВА ЗАГЛУШКА) ---
-// --- КОМПОНЕНТ INTERVIEW SIMULATOR ---
-
-const InterviewSimulator = ({ job, setCurrentView }) => {
-    const [isConnected, setIsConnected] = useState(false);
-    const [transcript, setTranscript] = useState([]);
-    const [feedback, setFeedback] = useState(null);
-    const [isFeedbackLoading, setIsFeedbackLoading] = useState(false);
-    const [volumeLevel, setVolumeLevel] = useState(0);
-
-    // Refs for audio handling (simplified for prototype)
-    const audioContextRef = useRef(null);
-    const mediaStreamRef = useRef(null);
-    const liveSessionRef = useRef(null);
-
-    const startSession = async () => {
-        try {
-            // Request microphone access
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaStreamRef.current = stream;
-
-            // Setup Audio Context for volume visualization
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            audioContextRef.current = audioContext;
-            const source = audioContext.createMediaStreamSource(stream);
-            const analyzer = audioContext.createAnalyser();
-            analyzer.fftSize = 256;
-            source.connect(analyzer);
-
-            const dataArray = new Uint8Array(analyzer.frequencyBinCount);
-            const updateVolume = () => {
-                if (!isConnected) return;
-                analyzer.getByteFrequencyData(dataArray);
-                const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
-                setVolumeLevel(avg);
-                requestAnimationFrame(updateVolume);
-            };
-            // updateVolume(); // Start loop later
-
-            // Connect to Gemini Live
-            const callbacks = {
-                onAudioData: (base64Audio) => {
-                    // Play audio (simplified: using Audio element or similar)
-                    // For prototype, we assume the browser handles playback or we implement a player
-                    // This part is complex without a full player implementation.
-                    // We will use a simple HTML5 Audio element approach if possible, or just log it.
-                    // "LiveSupportModule" likely has this logic. I should probably reuse it or simplify.
-                    // For now, let's assume we just show the transcript.
-                    console.log("Received audio data");
-                },
-                onTranscript: (text, role) => {
-                    setTranscript(prev => [...prev, { role, text }]);
-                }
-            };
-
-            // const session = await geminiService.startInterviewSession(job, callbacks);
-            // liveSessionRef.current = session;
-            setIsConnected(true);
-            // Mocking connection for UI demo if backend fails or is complex
-            setTranscript([{ role: 'model', text: `Вітаю! Я Міра, ваш інтерв'юер. Ми розглядаємо вашу кандидатуру на посаду ${job.title}. Розкажіть, будь ласка, про ваш досвід?` }]);
-
-        } catch (e) {
-            console.error("Failed to start session:", e);
-            alert("Не вдалося отримати доступ до мікрофону або підключитися до AI.");
-        }
-    };
-
-    const endSession = async () => {
-        setIsConnected(false);
-        if (mediaStreamRef.current) {
-            mediaStreamRef.current.getTracks().forEach(track => track.stop());
-        }
-
-        setIsFeedbackLoading(true);
-        try {
-            const transcriptText = transcript.map(t => `${t.role}: ${t.text}`).join('\n');
-            const feedbackText = await geminiService.generateInterviewFeedback(job, transcriptText);
-            setFeedback(feedbackText);
-        } catch (e) {
-            console.error("Error generating feedback:", e);
-            setFeedback("Не вдалося згенерувати відгук. Спробуйте пізніше.");
-        } finally {
-            setIsFeedbackLoading(false);
-        }
-    };
-
-    return (
-        <div className="p-4 md:p-8 bg-white rounded-xl shadow-xl max-w-4xl mx-auto">
-            <button
-                className={`flex items-center text-sm font-semibold mb-6 ${PRIMARY_TEXT_COLOR} hover:opacity-80 transition`}
-                onClick={() => setCurrentView('veteran_jobs')}
-            >
-                <IconArrowLeft className="w-5 h-5 mr-1" />
-                Повернутися до Вакансій
-            </button>
-
-            <div className="flex items-center justify-between mb-6">
-                <h2 className={`text-2xl font-bold ${PRIMARY_TEXT_COLOR}`}>
-                    Симулятор Співбесіди: {job.title}
-                </h2>
-                {isConnected && (
-                    <div className="flex items-center text-red-500 animate-pulse">
-                        <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
-                        LIVE
-                    </div>
-                )}
-            </div>
-
-            {/* Transcript Area */}
-            <div className="h-64 overflow-y-auto bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
-                {transcript.length === 0 ? (
-                    <p className="text-gray-400 text-center mt-10">Натисніть "Почати", щоб розпочати співбесіду.</p>
-                ) : (
-                    transcript.map((t, i) => (
-                        <div key={i} className={`mb-3 ${t.role === 'user' ? 'text-right' : 'text-left'}`}>
-                            <span className={`inline-block px-3 py-2 rounded-lg ${t.role === 'user' ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800'}`}>
-                                {t.text}
-                            </span>
-                        </div>
-                    ))
-                )}
-            </div>
-
-            {/* Controls */}
-            {!feedback && (
-                <div className="flex justify-center space-x-4">
-                    {!isConnected ? (
-                        <button onClick={startSession} className={`px-6 py-3 rounded-full ${PRIMARY_COLOR} text-white font-bold shadow-lg hover:opacity-90 transition`}>
-                            Почати Співбесіду
-                        </button>
-                    ) : (
-                        <button onClick={endSession} className="px-6 py-3 rounded-full bg-red-500 text-white font-bold shadow-lg hover:bg-red-600 transition">
-                            Завершити Співбесіду
-                        </button>
-                    )}
-                </div>
-            )}
-
-            {/* Feedback Area */}
-            {isFeedbackLoading && (
-                <div className="mt-6 text-center">
-                    <IconLoader className="w-8 h-8 animate-spin mx-auto text-[#FFC300]" />
-                    <p className="mt-2 text-gray-600">Аналізуємо вашу співбесіду...</p>
-                </div>
-            )}
-
-            {feedback && (
-                <div className="mt-8 p-6 bg-green-50 rounded-xl border border-green-200">
-                    <h3 className="text-xl font-bold text-green-800 mb-4">Відгук AI-Коуча</h3>
-                    <div className="prose max-w-none text-gray-700" dangerouslySetInnerHTML={{ __html: feedback.replace(/\n/g, '<br/>') }} />
-                    <button onClick={() => setCurrentView('veteran_jobs')} className="mt-4 text-green-700 underline">
-                        Повернутися до списку вакансій
-                    </button>
-                </div>
-            )}
-        </div>
-    );
-};
-
-// --- КОМПОНЕНТ VETERAN JOBS ---
-
-const VeteranJobsModule = ({ setCurrentView, userId, onStartInterview, userRole }) => {
-    const [jobs, setJobs] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [showAddForm, setShowAddForm] = useState(false);
-    const [newJob, setNewJob] = useState({ title: '', company: '', description: '', responsibilities: '' });
-
-    const jobsRef = db ? collection(db, 'vacancies') : null;
-    const isAdminOrHR = userRole === 'admin' || userRole === 'hr';
-
-    useEffect(() => {
-        if (!jobsRef) return;
-        const unsubscribe = onSnapshot(query(jobsRef, orderBy('createdAt', 'desc')), (snapshot) => {
-            const fetchedJobs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setJobs(fetchedJobs);
-            setLoading(false);
-        });
-        return () => unsubscribe();
-    }, []);
-
-    const handleAddJob = async (e) => {
-        e.preventDefault();
-        if (!newJob.title || !newJob.company) return;
-        await addDoc(jobsRef, {
-            ...newJob,
-            responsibilities: newJob.responsibilities.split('\n').filter(r => r.trim()),
-            createdAt: serverTimestamp()
-        });
-        setShowAddForm(false);
-        setNewJob({ title: '', company: '', description: '', responsibilities: '' });
-    };
-
-    const handleDeleteJob = async (id) => {
-        if (window.confirm('Видалити цю вакансію?')) {
-            await deleteDoc(doc(db, 'vacancies', id));
-        }
-    };
-
-    return (
-        <div className="p-4 md:p-8 bg-white rounded-xl shadow-xl max-w-6xl mx-auto">
-            <button
-                className={`flex items-center text-sm font-semibold mb-6 ${PRIMARY_TEXT_COLOR} hover:opacity-80 transition`}
-                onClick={() => setCurrentView('dashboard')}
-            >
-                <IconArrowLeft className="w-5 h-5 mr-1" />
-                Повернутися до Панелі Керування
-            </button>
-
-            <div className="flex justify-between items-center mb-6">
-                <h2 className={`text-3xl font-bold ${PRIMARY_TEXT_COLOR}`}>Вакансії для Ветеранів</h2>
-                {isAdminOrHR && (
-                    <button onClick={() => setShowAddForm(!showAddForm)} className={`px-4 py-2 rounded-lg ${PRIMARY_COLOR} text-white font-bold`}>
-                        {showAddForm ? 'Скасувати' : '+ Додати Вакансію'}
-                    </button>
-                )}
-            </div>
-
-            {showAddForm && (
-                <form onSubmit={handleAddJob} className="mb-8 p-6 bg-gray-50 rounded-xl border border-gray-200">
-                    <h3 className="text-xl font-bold mb-4">Нова Вакансія</h3>
-                    <div className="grid gap-4">
-                        <input placeholder="Назва посади" className="p-3 border rounded-lg" value={newJob.title} onChange={e => setNewJob({ ...newJob, title: e.target.value })} required />
-                        <input placeholder="Компанія" className="p-3 border rounded-lg" value={newJob.company} onChange={e => setNewJob({ ...newJob, company: e.target.value })} required />
-                        <textarea placeholder="Опис" className="p-3 border rounded-lg" rows="3" value={newJob.description} onChange={e => setNewJob({ ...newJob, description: e.target.value })} />
-                        <textarea placeholder="Обов'язки (кожен з нового рядка)" className="p-3 border rounded-lg" rows="3" value={newJob.responsibilities} onChange={e => setNewJob({ ...newJob, responsibilities: e.target.value })} />
-                        <button type="submit" className={`py-2 rounded-lg ${PRIMARY_COLOR} text-white font-bold`}>Зберегти</button>
-                    </div>
-                </form>
-            )}
-
-            <div className="grid md:grid-cols-2 gap-6">
-                {jobs.map(job => (
-                    <div key={job.id} className="p-6 border border-gray-200 rounded-xl hover:shadow-lg transition bg-white">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <h3 className="text-xl font-bold text-[#002B49]">{job.title}</h3>
-                                <p className="text-gray-500 font-medium">{job.company}</p>
-                            </div>
-                            {isAdminOrHR && (
-                                <button onClick={() => handleDeleteJob(job.id)} className="text-red-500 hover:text-red-700">Видалити</button>
-                            )}
-                        </div>
-                        <p className="mt-3 text-gray-600 line-clamp-3">{job.description}</p>
-                        <div className="mt-4 flex justify-between items-center">
-                            <span className="text-sm text-gray-400">Опубліковано нещодавно</span>
-                            <button
-                                onClick={() => onStartInterview(job)}
-                                className={`px-4 py-2 rounded-lg ${ACCENT_COLOR} text-[#002B49] font-bold hover:opacity-90 transition flex items-center`}
-                            >
-                                <IconZap className="w-4 h-4 mr-2" />
-                                Тренувати Співбесіду
-                            </button>
-                        </div>
-                    </div>
-                ))}
-                {jobs.length === 0 && !loading && (
-                    <p className="text-gray-500 col-span-2 text-center py-10">Вакансій поки немає.</p>
-                )}
-            </div>
-        </div>
-    );
-};
-
-// --- КОМПОНЕНТ EDTECH MODULE ---
-
-const EdTechModule = ({ setCurrentView, userRole }) => {
-    const [courses, setCourses] = useState([]);
-    const [showAddForm, setShowAddForm] = useState(false);
-    const [newCourse, setNewCourse] = useState({ title: '', description: '', duration: '', level: '' });
-
-    const coursesRef = db ? collection(db, 'courses') : null;
-    const isAdminOrHR = userRole === 'admin' || userRole === 'hr';
-
-    useEffect(() => {
-        if (!coursesRef) return;
-        const unsubscribe = onSnapshot(query(coursesRef, orderBy('createdAt', 'desc')), (snapshot) => {
-            const fetchedCourses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setCourses(fetchedCourses);
-        });
-        return () => unsubscribe();
-    }, []);
-
-    const handleAddCourse = async (e) => {
-        e.preventDefault();
-        if (!newCourse.title) return;
-        await addDoc(coursesRef, { ...newCourse, createdAt: serverTimestamp() });
-        setShowAddForm(false);
-        setNewCourse({ title: '', description: '', duration: '', level: '' });
-    };
-
-    const handleDeleteCourse = async (id) => {
-        if (window.confirm('Видалити цей курс?')) {
-            await deleteDoc(doc(db, 'courses', id));
-        }
-    };
-
-    return (
-        <div className="p-4 md:p-8 bg-white rounded-xl shadow-xl max-w-6xl mx-auto">
-            <button
-                className={`flex items-center text-sm font-semibold mb-6 ${PRIMARY_TEXT_COLOR} hover:opacity-80 transition`}
-                onClick={() => setCurrentView('dashboard')}
-            >
-                <IconArrowLeft className="w-5 h-5 mr-1" />
-                Повернутися до Панелі Керування
-            </button>
-            <div className="flex justify-between items-center mb-6">
-                <h2 className={`text-3xl font-bold ${PRIMARY_TEXT_COLOR}`}>
-                    EdTech: Курси {userRole === 'veteran' ? 'Перекваліфікації' : 'для HR'}
-                </h2>
-                {isAdminOrHR && (
-                    <button onClick={() => setShowAddForm(!showAddForm)} className={`px-4 py-2 rounded-lg ${PRIMARY_COLOR} text-white font-bold`}>
-                        {showAddForm ? 'Скасувати' : '+ Додати Курс'}
-                    </button>
-                )}
-            </div>
-
-            {showAddForm && (
-                <form onSubmit={handleAddCourse} className="mb-8 p-6 bg-gray-50 rounded-xl border border-gray-200">
-                    <h3 className="text-xl font-bold mb-4">Новий Курс</h3>
-                    <div className="grid gap-4">
-                        <input placeholder="Назва курсу" className="p-3 border rounded-lg" value={newCourse.title} onChange={e => setNewCourse({ ...newCourse, title: e.target.value })} required />
-                        <textarea placeholder="Опис" className="p-3 border rounded-lg" rows="3" value={newCourse.description} onChange={e => setNewCourse({ ...newCourse, description: e.target.value })} />
-                        <div className="grid grid-cols-2 gap-4">
-                            <input placeholder="Тривалість (напр. 4 тижні)" className="p-3 border rounded-lg" value={newCourse.duration} onChange={e => setNewCourse({ ...newCourse, duration: e.target.value })} />
-                            <input placeholder="Рівень (напр. Початковий)" className="p-3 border rounded-lg" value={newCourse.level} onChange={e => setNewCourse({ ...newCourse, level: e.target.value })} />
-                        </div>
-                        <button type="submit" className={`py-2 rounded-lg ${PRIMARY_COLOR} text-white font-bold`}>Зберегти</button>
-                    </div>
-                </form>
-            )}
-
-            <div className="grid md:grid-cols-3 gap-6">
-                {courses.map(course => (
-                    <div key={course.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col">
-                        <div className="h-32 bg-gradient-to-r from-[#002B49] to-[#004e80] p-4 flex items-end">
-                            <h3 className="text-white font-bold text-lg leading-tight">{course.title}</h3>
-                        </div>
-                        <div className="p-4 flex-grow">
-                            <div className="flex items-center text-xs text-gray-500 mb-2 space-x-2">
-                                <span className="flex items-center"><IconClock className="w-3 h-3 mr-1" /> {course.duration}</span>
-                                <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">{course.level}</span>
-                            </div>
-                            <p className="text-gray-600 text-sm line-clamp-3">{course.description}</p>
-                        </div>
-                        <div className="p-4 border-t border-gray-100 flex justify-between items-center bg-gray-50">
-                            <button className={`text-sm font-bold ${PRIMARY_TEXT_COLOR} hover:underline`}>Детальніше</button>
-                            {isAdminOrHR && (
-                                <button onClick={() => handleDeleteCourse(course.id)} className="text-xs text-red-500 hover:text-red-700">Видалити</button>
-                            )}
-                        </div>
-                    </div>
-                ))}
-                {courses.length === 0 && (
-                    <p className="text-gray-500 col-span-3 text-center py-10">Курсів поки немає.</p>
-                )}
-            </div>
-        </div>
-    );
-};
-
-// --- КОМПОНЕНТ SUPPORT CHAT MODULE ---
+// --- КОМПОНЕНТ SUPPORT CHAT MODULE (ПСИХОЛОГІЧНА ПІДТРИМКА) ---
 
 const SupportChatModule = ({ setCurrentView, userId }) => {
     const [messages, setMessages] = useState([]);
@@ -721,7 +380,7 @@ const SupportChatModule = ({ setCurrentView, userId }) => {
 
     // Генерація відповіді AI-психолога
     const getPsychologistResponse = async (history) => {
-        const systemPrompt = "Ти — 'Порадник Світла' (Poradnyk Svitla), співчутливий і висококваліфікований AI-психолог. Твоя мета — надавати підтримку ветеранам та їхнім родинам. Використовуй спокійний, професійний, заохочувальний тон. Відповідай виключно українською мовою. Твоя відповідь має бути лаконічною, теплою і зосередженою на емоційному стані користувача. НІКОЛИ не давай медичних порад і не став діагнозів. Завжди заохочуй до пошуку професійної допомоги, якщо проблема є серйозною.";
+        const systemPrompt = "Ти — Міра, співчутлива і висококваліфікована AI-психолог. Твоя мета — надавати підтримку ветеранам та їхнім родинам. Використовуй спокійний, професійний, заохочувальний тон. Відповідай виключно українською мовою. Твоя відповідь має бути лаконічною, теплою і зосередженою на емоційному стані користувача. НІКОЛИ не давай медичних порад і не став діагнозів. Завжди заохочуй до пошуку професійної допомоги, якщо проблема є серйозною.";
 
         // Використовуємо лише об'єкти з текстом, прибираючи об'єкти serverTimestamp, які можуть зламати chatHistory
         const cleanHistory = history.filter(msg => msg.text).slice(-5).map(msg => ({ // Беремо 5 останніх повідомлень для контексту
@@ -801,7 +460,7 @@ const SupportChatModule = ({ setCurrentView, userId }) => {
     // Компонент для відображення одного повідомлення
     const MessageBubble = ({ message }) => {
         const isUser = message.role === 'user';
-        const roleName = isUser ? 'Ви' : 'Порадник Світла';
+        const roleName = isUser ? 'Ви' : 'Міра';
         const bubbleColor = isUser ? 'bg-[#D1E7DD] text-gray-900' : `${PRIMARY_COLOR} text-white`;
         const alignment = isUser ? 'self-end' : 'self-start';
         const textColor = isUser ? 'text-gray-700' : 'text-gray-300';
@@ -861,7 +520,7 @@ const SupportChatModule = ({ setCurrentView, userId }) => {
             <div className="flex flex-col h-[60vh] bg-white rounded-xl shadow-inner p-4 overflow-y-auto space-y-4">
                 {messages.length === 0 && !isThinking ? (
                     <div className="text-center p-12 text-gray-500">
-                        <p>Привіт! Я — Порадник Світла. Я тут, щоб вислухати вас і надати підтримку. Чим я можу бути корисним сьогодні?</p>
+                        <p>Привіт! Я — Міра, ваша AI-психолог. Я тут, щоб вислухати вас і надати підтримку. Чим я можу бути корисною сьогодні?</p>
                         <p className="mt-2 text-sm">Спробуйте написати про те, що вас хвилює, або про свій день.</p>
                     </div>
                 ) : (
@@ -874,7 +533,7 @@ const SupportChatModule = ({ setCurrentView, userId }) => {
                     <div className="self-start">
                         <div className={`px-4 py-3 rounded-xl shadow-md ${PRIMARY_COLOR} text-white`}>
                             <div className="flex items-center space-x-2">
-                                <span className="text-sm font-semibold">Порадник Світла думає...</span>
+                                <span className="text-sm font-semibold">Міра думає...</span>
                                 <IconLoader className="w-4 h-4 mr-1 animate-spin text-[#FFC300]" />
                             </div>
                         </div>
@@ -901,209 +560,20 @@ const SupportChatModule = ({ setCurrentView, userId }) => {
                     <IconSend className="w-6 h-6" />
                 </button>
             </form>
+
+            {/* Кнопка голосового виклику */}
+            <div className="mt-4 text-center">
+                <button
+                    onClick={() => setCurrentView('live_support')}
+                    className={`px-6 py-3 rounded-full ${ACCENT_COLOR} text-[#002B49] font-bold shadow-lg hover:opacity-90 transition flex items-center mx-auto`}
+                >
+                    <IconMic className="w-5 h-5 mr-2" />
+                    Голосовий Виклик з Мірою
+                </button>
+            </div>
         </div>
     );
 };
-
-
-// --- КОМПОНЕНТ VETERAN PROFILE MODULE ---
-
-const VeteranProfileModule = ({ setCurrentView, userId }) => {
-    const [profileData, setProfileData] = useState({
-        fullName: '',
-        summary: '',
-        experience: '',
-        skills: '',
-        linkedinUrl: ''
-    });
-    const [loading, setLoading] = useState(true);
-    const [message, setMessage] = useState(null);
-
-    // Шлях до профілю: /artifacts/{appId}/users/{userId}/user_profiles/data
-    const profileRef = db ? doc(db, 'artifacts', appId, 'users', userId, 'user_profiles', 'data') : null;
-
-    useEffect(() => {
-        if (!profileRef) return;
-        const fetchProfile = async () => {
-            try {
-                const docSnap = await getDoc(profileRef);
-                if (docSnap.exists()) {
-                    // Об'єднуємо дефолтні дані з отриманими, щоб уникнути undefined
-                    setProfileData(prev => ({ ...prev, ...docSnap.data() }));
-                }
-            } catch (e) {
-                console.error("Error fetching profile:", e);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchProfile();
-    }, [userId]);
-
-    const handleSave = async () => {
-        if (!profileRef) return;
-        setLoading(true);
-        setMessage(null);
-        try {
-            await setDoc(profileRef, { ...profileData, updatedAt: serverTimestamp() }, { merge: true });
-            setMessage({ type: 'success', text: 'Профіль успішно збережено!' });
-        } catch (e) {
-            console.error("Error saving profile:", e);
-            setMessage({ type: 'error', text: 'Не вдалося зберегти профіль.' });
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div className="p-4 md:p-8 bg-white rounded-xl shadow-xl max-w-4xl mx-auto">
-            <button
-                className={`flex items-center text-sm font-semibold mb-6 ${PRIMARY_TEXT_COLOR} hover:opacity-80 transition`}
-                onClick={() => setCurrentView('dashboard')}
-            >
-                <IconArrowLeft className="w-5 h-5 mr-1" />
-                Повернутися до Панелі Керування
-            </button>
-            <h2 className={`text-3xl font-bold mb-6 ${PRIMARY_TEXT_COLOR} flex items-center`}>
-                <IconUser className={`w-8 h-8 mr-3 ${ACCENT_TEXT_COLOR}`} />
-                Мій Профіль
-            </h2>
-
-            {message && (
-                <div className={`p-4 mb-4 rounded-lg ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                    {message.text}
-                </div>
-            )}
-
-            <div className="space-y-6">
-                <div>
-                    <label className="block text-gray-700 font-semibold mb-2">ПІБ</label>
-                    <input
-                        type="text"
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFC300]"
-                        value={profileData.fullName}
-                        onChange={(e) => setProfileData({ ...profileData, fullName: e.target.value })}
-                        placeholder="Іван Іваненко"
-                    />
-                </div>
-                <div>
-                    <label className="block text-gray-700 font-semibold mb-2">Професійний Підсумок</label>
-                    <textarea
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFC300]"
-                        rows="3"
-                        value={profileData.summary}
-                        onChange={(e) => setProfileData({ ...profileData, summary: e.target.value })}
-                        placeholder="Коротко про ваші цілі та досвід..."
-                    />
-                </div>
-                <div>
-                    <label className="block text-gray-700 font-semibold mb-2">Досвід Роботи</label>
-                    <textarea
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFC300]"
-                        rows="4"
-                        value={profileData.experience}
-                        onChange={(e) => setProfileData({ ...profileData, experience: e.target.value })}
-                        placeholder="Опишіть ваш попередній досвід..."
-                    />
-                </div>
-                <div>
-                    <label className="block text-gray-700 font-semibold mb-2">Навички (через кому)</label>
-                    <input
-                        type="text"
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFC300]"
-                        value={profileData.skills}
-                        onChange={(e) => setProfileData({ ...profileData, skills: e.target.value })}
-                        placeholder="Лідерство, Комунікація, Python, Project Management"
-                    />
-                </div>
-                <div>
-                    <label className="block text-gray-700 font-semibold mb-2">LinkedIn URL (опціонально)</label>
-                    <input
-                        type="text"
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFC300]"
-                        value={profileData.linkedinUrl}
-                        onChange={(e) => setProfileData({ ...profileData, linkedinUrl: e.target.value })}
-                        placeholder="https://linkedin.com/in/..."
-                    />
-                </div>
-
-                <button
-                    onClick={handleSave}
-                    disabled={loading}
-                    className={`w-full py-3 px-4 rounded-xl text-white font-bold shadow-lg transition duration-200 
-                                ${PRIMARY_COLOR} hover:bg-[#003C65] ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                    {loading ? 'Збереження...' : 'Зберегти Профіль'}
-                </button>
-            </div>
-
-            <h2 className={`text-3xl font-bold mb-6 ${PRIMARY_TEXT_COLOR} flex items-center`}>
-                <IconHeartHandshake className={`w-8 h-8 mr-3 ${ACCENT_TEXT_COLOR}`} />
-                Модуль Психологічної Підтримки
-            </h2>
-            <div className="text-sm text-gray-600 mb-4 p-3 bg-white rounded-lg border-l-4 border-[#FFC300] shadow-sm">
-                **Важливо:** Наш AI-порадник надає лише емоційну підтримку та загальні поради. Для вирішення серйозних проблем зверніться до кваліфікованого фахівця. Ваша конфіденційність гарантується.
-            </div>
-
-            {moduleError && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-                    <strong className="font-bold">Помилка: </strong>
-                    <span className="block sm:inline">{moduleError}</span>
-                </div>
-            )}
-
-            {/* Вікно чату */}
-            <div className="flex flex-col h-[60vh] bg-white rounded-xl shadow-inner p-4 overflow-y-auto space-y-4">
-                {messages.length === 0 && !isThinking ? (
-                    <div className="text-center p-12 text-gray-500">
-                        <p>Привіт! Я — Порадник Світла. Я тут, щоб вислухати вас і надати підтримку. Чим я можу бути корисним сьогодні?</p>
-                        <p className="mt-2 text-sm">Спробуйте написати про те, що вас хвилює, або про свій день.</p>
-                    </div>
-                ) : (
-                    messages.map((msg) => (
-                        <MessageBubble key={msg.id || Math.random()} message={msg} />
-                    ))
-                )}
-                {/* Індикатор друкування AI */}
-                {isThinking && (
-                    <div className="self-start">
-                        <div className={`px-4 py-3 rounded-xl shadow-md ${PRIMARY_COLOR} text-white`}>
-                            <div className="flex items-center space-x-2">
-                                <span className="text-sm font-semibold">Порадник Світла думає...</span>
-                                <IconLoader className="w-4 h-4 mr-1 animate-spin text-[#FFC300]" />
-                            </div>
-                        </div>
-                    </div>
-                )}
-                <div ref={messagesEndRef} />
-            </div>
-
-            {/* Поле введення */}
-            <form onSubmit={handleSendMessage} className="mt-4 flex space-x-3">
-                <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    className="flex-grow p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#FFC300] focus:border-[#FFC300] transition"
-                    placeholder="Напишіть своє повідомлення..."
-                    disabled={isThinking}
-                />
-                <button
-                    type="submit"
-                    className={`flex items-center justify-center p-3 rounded-xl text-white font-bold shadow-md transition duration-200 ${PRIMARY_COLOR} ${isThinking || !newMessage.trim() ? 'bg-gray-400' : 'hover:opacity-90'}`}
-                    disabled={isThinking || !newMessage.trim()}
-                >
-                    <IconSend className="w-6 h-6" />
-                </button>
-            </form>
-        </div>
-    );
-};
-
-
-
-
-
 // --- КОМПОНЕНТ LOGIN SCREEN (ЕКРАН ВХОДУ) ---
 const LoginScreen = ({ onLogin }) => {
     const [showAdminLogin, setShowAdminLogin] = useState(false);
@@ -1412,9 +882,9 @@ const HeroWayUa_App = () => {
         // Змінюємо стилі: додаємо тінь, чіткіший hover та фіксований колір, щоб кнопки виглядали активними
         <button
             className={`flex flex-col items-center justify-center p-4 m-2 text-white transition duration-300 
-                  ${PRIMARY_COLOR} hover:bg-[#003C65] hover:scale-[1.02] 
-                  rounded-xl shadow-lg hover:shadow-xl active:shadow-inner active:scale-[0.99]
-                  w-full md:w-48 h-32 transform focus:outline-none focus:ring-4 focus:ring-[#FFC300]/50`}
+                  ${PRIMARY_COLOR} hover:bg-[#003C65] hover:scale-[1.02]
+                    rounded-xl shadow-lg hover:shadow-xl active:shadow-inner active:scale-[0.99]
+                    w-full md:w-48 h-32 transform focus:outline-none focus:ring-4 focus:ring-[#FFC300]/50`}
             onClick={() => setCurrentView(viewName)} // Використовуємо viewName для зміни вигляду
         >
             <Icon className="w-8 h-8 text-[#FFC300] mb-2" />
@@ -1450,32 +920,6 @@ const HeroWayUa_App = () => {
 
     // --- Рендер Основного Інтерфейсу ---
 
-    const renderContent = () => {
-        // Якщо роль не обрана, показуємо екран входу
-        if (!userRole) {
-            return <LoginScreen onLogin={handleLogin} />;
-        }
-
-        switch (currentView) {
-            case 'ai_recruiter':
-                return <AiRecruiterModule setCurrentView={setCurrentView} userId={userId} />;
-            case 'edtech_hr':
-            case 'edtech_veteran':
-                return <EdTechModule setCurrentView={setCurrentView} userRole={effectiveRole} />;
-            case 'support_chat':
-                return <SupportChatModule setCurrentView={setCurrentView} userId={userId} />;
-            case 'veteran_jobs':
-                return <VeteranJobsModule setCurrentView={setCurrentView} userId={userId} onStartInterview={(job) => { setSelectedJob(job); setCurrentView('interview_simulator'); }} userRole={effectiveRole} />;
-            case 'interview_simulator':
-                return selectedJob ? <InterviewSimulator job={selectedJob} setCurrentView={setCurrentView} /> : <VeteranJobsModule setCurrentView={setCurrentView} userId={userId} onStartInterview={(job) => { setSelectedJob(job); setCurrentView('interview_simulator'); }} userRole={effectiveRole} />;
-            case 'veteran_profile':
-                return <VeteranProfileModule setCurrentView={setCurrentView} userId={userId} />;
-            case 'dashboard':
-            default:
-                return renderDashboard();
-        }
-    };
-
     // Головна Панель Керування (Dashboard)
     const renderDashboard = () => {
         const isVeteran = effectiveRole === 'veteran';
@@ -1504,6 +948,7 @@ const HeroWayUa_App = () => {
                             <>
                                 {/* viewName="ai_recruiter" коректно викликає AiRecruiterModule */}
                                 <NavButton icon={IconBriefcase} title="AI-Скоринг та Вакансії" role="SaaS" viewName="ai_recruiter" />
+                                <NavButton icon={IconBriefcase} title="Управління Вакансіями" role="SaaS" viewName="veteran_jobs" />
                                 <NavButton icon={IconGraduationCap} title="EdTech: Курси для HR" role="EdTech" viewName="edtech_hr" />
                             </>
                         )}
@@ -1527,7 +972,7 @@ const HeroWayUa_App = () => {
                     <p className="text-gray-600">
                         {isHR
                             ? `Тут буде відображено дашборд з даними з колекції 'vacancies' та 'resumes'.`
-                            : `Ваш UID: ${userId}`
+                            : `Ваш UID: ${userId} `
                         }
                     </p>
                     <p className="text-sm mt-3 text-red-500">
@@ -1536,6 +981,56 @@ const HeroWayUa_App = () => {
                 </section>
             </main>
         );
+    };
+
+    // --- Рендер Основного Інтерфейсу ---
+
+    const renderContent = () => {
+        // Якщо роль не обрана, показуємо екран входу
+        if (!userRole) {
+            return <LoginScreen onLogin={handleLogin} />;
+        }
+
+        switch (currentView) {
+            case 'ai_recruiter':
+                return <AiRecruiterModule setCurrentView={setCurrentView} userId={userId} />;
+            case 'edtech_hr':
+            case 'edtech_veteran':
+                return <EdTechModule setCurrentView={setCurrentView} userRole={effectiveRole} />;
+            case 'support_chat':
+                return <SupportChatModule setCurrentView={setCurrentView} userId={userId} />;
+            case 'live_support':
+                return <LiveSupportModule setCurrentView={setCurrentView} />;
+            case 'veteran_jobs':
+                return (
+                    <VeteranJobsModule
+                        setCurrentView={setCurrentView}
+                        userId={userId}
+                        db={db}
+                        appId={appId}
+                        initialFilter="all"
+                        onViewed={() => { }}
+                    />
+                );
+            case 'interview_simulator':
+                return selectedJob ? (
+                    <InterviewSimulator job={selectedJob} setCurrentView={setCurrentView} userId={userId} />
+                ) : (
+                    <VeteranJobsModule
+                        setCurrentView={setCurrentView}
+                        userId={userId}
+                        db={db}
+                        appId={appId}
+                        initialFilter="all"
+                        onViewed={() => { }}
+                    />
+                );
+            case 'veteran_profile':
+                return <VeteranProfileModule setCurrentView={setCurrentView} userId={userId} db={db} appId={appId} />;
+            case 'dashboard':
+            default:
+                return renderDashboard();
+        }
     };
 
     return (

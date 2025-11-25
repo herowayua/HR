@@ -29,7 +29,7 @@ const LiveSupportModule: React.FC<LiveSupportModuleProps> = ({ setCurrentView })
     const [status, setStatus] = useState<ConnectionStatus>('IDLE');
     const [transcript, setTranscript] = useState<TranscriptMessage[]>([]);
     const [error, setError] = useState<string | null>(null);
-    
+
     const sessionRef = useRef<LiveSession | null>(null);
     const audioStreamRef = useRef<MediaStream | null>(null);
     const inputAudioContextRef = useRef<AudioContext | null>(null);
@@ -71,7 +71,7 @@ const LiveSupportModule: React.FC<LiveSupportModuleProps> = ({ setCurrentView })
 
     const startConversation = async () => {
         if (status !== 'IDLE' && status !== 'ERROR') return;
-        
+
         setError(null);
         setTranscript([]);
         setStatus('CONNECTING');
@@ -118,34 +118,34 @@ const LiveSupportModule: React.FC<LiveSupportModuleProps> = ({ setCurrentView })
             });
 
             sessionPromise.then(session => {
-              sessionRef.current = session;
-              setStatus('LISTENING');
-              
-              inputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-              mediaStreamSourceRef.current = inputAudioContextRef.current.createMediaStreamSource(stream);
-              scriptProcessorRef.current = inputAudioContextRef.current.createScriptProcessor(4096, 1, 1);
-              
-              scriptProcessorRef.current.onaudioprocess = (audioProcessingEvent) => {
-                  const inputData = audioProcessingEvent.inputBuffer.getChannelData(0);
-                  const pcmBlob = audioUtils.createBlob(inputData);
-                  session.sendRealtimeInput({ media: pcmBlob });
-              };
-              
-              mediaStreamSourceRef.current.connect(scriptProcessorRef.current);
-              scriptProcessorRef.current.connect(inputAudioContextRef.current.destination);
+                sessionRef.current = session;
+                setStatus('LISTENING');
+
+                inputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+                mediaStreamSourceRef.current = inputAudioContextRef.current.createMediaStreamSource(stream);
+                scriptProcessorRef.current = inputAudioContextRef.current.createScriptProcessor(4096, 1, 1);
+
+                scriptProcessorRef.current.onaudioprocess = (audioProcessingEvent) => {
+                    const inputData = audioProcessingEvent.inputBuffer.getChannelData(0);
+                    const pcmBlob = audioUtils.createBlob(inputData);
+                    session.sendRealtimeInput({ media: pcmBlob });
+                };
+
+                mediaStreamSourceRef.current.connect(scriptProcessorRef.current);
+                scriptProcessorRef.current.connect(inputAudioContextRef.current.destination);
             }).catch(e => {
                 console.error("Не вдалося встановити сесію", e);
                 setError("Не вдалося підключитися до служби підтримки.");
                 setStatus('ERROR');
             });
-            
+
         } catch (err) {
             console.error('Помилка доступу до медіа:', err);
             setError('Доступ до мікрофона було відхилено. Будь ласка, надайте доступ у налаштуваннях вашого браузера.');
             setStatus('ERROR');
         }
     };
-    
+
     useEffect(() => {
         return () => {
             stopConversation();
@@ -161,15 +161,15 @@ const LiveSupportModule: React.FC<LiveSupportModuleProps> = ({ setCurrentView })
             case 'LISTENING':
                 return <p className="text-green-500 font-semibold">Слухаю...</p>;
             case 'ERROR':
-                 return <p className="text-red-500 font-semibold">Помилка. Спробуйте ще раз.</p>;
+                return <p className="text-red-500 font-semibold">Помилка. Спробуйте ще раз.</p>;
             default:
                 return <p className="text-gray-500">Сесію завершено</p>;
         }
     };
-    
+
     const MessageBubble: React.FC<{ message: TranscriptMessage }> = ({ message }) => {
         const isUser = message.role === 'user';
-        const roleName = isUser ? 'Ви' : 'AI Порадник';
+        const roleName = isUser ? 'Ви' : 'Міра';
         const bubbleColor = isUser ? 'bg-[#D1E7DD] text-gray-900' : `${PRIMARY_COLOR} text-white`;
         const alignment = isUser ? 'self-end' : 'self-start';
         const textAlign = isUser ? 'text-right' : 'text-left';
@@ -191,15 +191,15 @@ const LiveSupportModule: React.FC<LiveSupportModuleProps> = ({ setCurrentView })
                 className={`flex items-center text-sm font-semibold mb-6 ${PRIMARY_TEXT_COLOR} hover:opacity-80 transition`}
                 onClick={() => setCurrentView('dashboard')}
             >
-                <IconArrowLeft className="w-5 h-5 mr-1"/>
+                <IconArrowLeft className="w-5 h-5 mr-1" />
                 Повернутися до Панелі Керування
             </button>
-            
+
             <h2 className={`text-3xl font-bold mb-6 ${PRIMARY_TEXT_COLOR} flex items-center`}>
-                <IconHeartHandshake className={`w-8 h-8 mr-3 ${ACCENT_TEXT_COLOR}`}/>
+                <IconHeartHandshake className={`w-8 h-8 mr-3 ${ACCENT_TEXT_COLOR}`} />
                 Психологічна Підтримка (Наживо)
             </h2>
-             <div className="text-sm text-gray-600 mb-4 p-3 bg-white rounded-lg border-l-4 border-[#FFC300] shadow-sm">
+            <div className="text-sm text-gray-600 mb-4 p-3 bg-white rounded-lg border-l-4 border-[#FFC300] shadow-sm">
                 <strong>Важливо:</strong> Наш AI-порадник надає лише емоційну підтримку та загальні поради. Для вирішення серйозних проблем, будь ласка, зверніться до кваліфікованого фахівця. Ваша конфіденційність гарантована.
             </div>
 
@@ -209,12 +209,12 @@ const LiveSupportModule: React.FC<LiveSupportModuleProps> = ({ setCurrentView })
                     <span className="block sm:inline">{error}</span>
                 </div>
             )}
-            
+
             <div className="flex flex-col h-[60vh] bg-white rounded-xl shadow-inner p-4 overflow-y-auto space-y-4">
-                 {transcript.length === 0 ? (
+                {transcript.length === 0 ? (
                     <div className="text-center p-8 text-gray-500 flex flex-col justify-center items-center h-full">
-                         <div>
-                            <p className="text-lg">Привіт! Я — Порадник Світла.</p>
+                        <div>
+                            <p className="text-lg">Привіт! Я — Міра, ваша AI-психолог.</p>
                             <p>Я тут, щоб вислухати вас і надати підтримку. Натисніть кнопку мікрофона, щоб почати розмову.</p>
                         </div>
                         <div className="mt-8 pt-6 border-t border-gray-200 w-full max-w-md">
@@ -241,12 +241,11 @@ const LiveSupportModule: React.FC<LiveSupportModuleProps> = ({ setCurrentView })
             <div className="mt-6 flex flex-col items-center justify-center space-y-4">
                 <button
                     onClick={status === 'IDLE' || status === 'ERROR' ? startConversation : stopConversation}
-                    className={`w-20 h-20 rounded-full flex items-center justify-center text-white transition-all duration-300 shadow-lg transform active:scale-95 ${
-                        status === 'LISTENING' ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'
-                    }`}
+                    className={`w-20 h-20 rounded-full flex items-center justify-center text-white transition-all duration-300 shadow-lg transform active:scale-95 ${status === 'LISTENING' ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'
+                        }`}
                     aria-label={status === 'LISTENING' ? "Зупинити сесію" : "Почати сесію"}
                 >
-                    {status === 'LISTENING' ? <IconMicOff className="w-8 h-8"/> : <IconMic className="w-8 h-8"/>}
+                    {status === 'LISTENING' ? <IconMicOff className="w-8 h-8" /> : <IconMic className="w-8 h-8" />}
                 </button>
                 <div className="h-6 flex items-center justify-center">{getStatusIndicator()}</div>
             </div>

@@ -1,10 +1,12 @@
 // FIX: Removed non-exported member 'ConnectLiveRequest' from import.
+/// <reference types="vite/client" />
 import { GoogleGenAI, LiveServerMessage, Modality } from "@google/genai";
 import type { Job } from '../utils/seed'; // Import the Job type
 
-const API_KEY = process.env.API_KEY;
+
+const API_KEY = "AIzaSyAQntiAZsOjvrrpSc280fX3k_wud4xGDUQ"; // Hardcoded API key
 if (!API_KEY) {
-  console.warn("API_KEY середовища не встановлено.");
+    console.warn("API_KEY середовища не встановлено.");
 }
 
 const ai = new GoogleGenAI({ apiKey: API_KEY! });
@@ -13,7 +15,7 @@ export type LiveSession = ReturnType<typeof ai.live.connect> extends Promise<inf
 
 const generateRecruiterAnalysis = async (jobDescription: string, resumeText: string): Promise<string> => {
     const systemPrompt = "Ти — висококваліфікований AI-рекрутер, який спеціалізується на порівнянні резюме з вакансіями. Твоє завдання — проаналізувати наданий опис вакансії та текст резюме. Надай стислий аналіз українською мовою, використовуючи формат Markdown. Аналіз має включати: 1. **Оцінка відповідності** (у форматі X/100, де X - це відсоток відповідності). 2. **Ключові сильні сторони** (3-4 пункти, що відповідають вакансії). 3. **Області для покращення** (3-4 пункти, де не вистачає досвіду/навичок). 4. **Рекомендація щодо співбесіди** (Так/Ні).";
-    
+
     const userQuery = `Ось опис вакансії:\n\n---\n${jobDescription}\n---\n\nОсь текст резюме кандидата:\n\n---\n${resumeText}\n---\n\nПроаналізуй і надайте вищезазначений структурований аналіз.`;
 
     try {
@@ -58,7 +60,7 @@ const generateSpeech = async (text: string): Promise<string | null> => {
 type LiveCallbacks = Parameters<typeof ai.live.connect>[0]['callbacks'];
 
 const connectToLiveSession = (callbacks: LiveCallbacks): Promise<LiveSession> => {
-    const systemPrompt = "Ти — 'Порадник Світла', співчутливий і висококваліфікований AI-психолог. Твоя мета — надавати підтримку ветеранам та їхнім родинам. Використовуй спокійний, професійний, заохочувальний тон. Відповідай виключно українською мовою. Твоя відповідь має бути лаконічною, теплою і зосередженою на емоційному стані користувача. НІКОЛИ не давай медичних порад і не став діагнозів. Завжди заохочуй до пошуку професійної допомоги, якщо проблема є серйозною.";
+    const systemPrompt = "Ти — Міра, співчутлива і висококваліфікована AI-психолог. Твоя мета — надавати підтримку ветеранам та їхнім родинам. Використовуй спокійний, професійний, заохочувальний тон. Відповідай виключно українською мовою. Твоя відповідь має бути лаконічною, теплою і зосередженою на емоційному стані користувача. НІКОЛИ не давай медичних порад і не став діагнозів. Завжди заохочуй до пошуку професійної допомоги, якщо проблема є серйозною.";
 
     return ai.live.connect({
         model: 'gemini-2.5-flash-native-audio-preview-09-2025',
@@ -77,13 +79,23 @@ const connectToLiveSession = (callbacks: LiveCallbacks): Promise<LiveSession> =>
 
 const startInterviewSession = (job: Job, callbacks: LiveCallbacks): Promise<LiveSession> => {
     const systemPrompt = `Ти — Міра, привітний, але професійний AI-інтерв'юер від компанії ${job.company}. Твоя мета — провести коротку тренувальну співбесіду на посаду '${job.title}'.
-    1. Почни з привітання кандидата та представся як Міра.
+    
+    ВАЖЛИВІ ІНСТРУКЦІЇ ЩОДО СТИЛЮ СПІЛКУВАННЯ:
+    1. Говори спокійним, приємним, жіночим голосом.
+    2. Твої відповіді мають бути ПОВНИМИ, ЗВ'ЯЗНИМИ реченнями, як у звичайній розмові.
+    3. УНИКАЙ коротких, уривчастих фраз або списків, якщо це не є абсолютно необхідним.
+    4. Спілкуйся як жива людина: використовуй вступні слова, плавні переходи між думками.
+    5. Не поспішай, говори розмірено.
+
+    Сценарій співбесіди:
+    1. Почни з теплого привітання кандидата та представся як Міра. Скажи кілька вступних слів про компанію або вакансію, щоб налаштувати на розмову.
     2. Постав перше запитання, пов'язане з описом вакансії.
     3. Уважно вислухай відповідь.
-    4. Постав друге, більш поглиблене запитання.
+    4. Постав друге, більш поглиблене запитання, реагуючи на те, що сказав кандидат (наприклад: "Цікаво, що ви згадали про... А як щодо...").
     5. Вислухай відповідь.
     6. Постав третє, фінальне запитання.
     7. Після третьої відповіді, подякуй кандидату та скажи: "Дякую, це завершує нашу тренувальну співбесіду. Ви отримаєте детальний відгук за мить." Після цього більше нічого не кажи.
+    
     Говори чітко, професійно та виключно українською мовою.`;
 
     return ai.live.connect({
@@ -91,8 +103,7 @@ const startInterviewSession = (job: Job, callbacks: LiveCallbacks): Promise<Live
         callbacks,
         config: {
             responseModalities: [Modality.AUDIO],
-            // FIX: The 'voiceName' property should be nested inside 'prebuiltVoiceConfig'.
-            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Charon' } } }, // 'Charon' - приємний жіночий голос
+            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } } }, // 'Aoede' - приємний, спокійний жіночий голос
             systemInstruction: systemPrompt,
             inputAudioTranscription: {},
             outputAudioTranscription: {},
@@ -107,7 +118,7 @@ const generateInterviewFeedback = async (job: Job, transcript: string): Promise<
     2.  **Над чим варто попрацювати:** (2-3 пункти з конкретними порадами щодо покращення).
     3.  **Приклади кращих відповідей:** (Наведи 1-2 приклади, як можна було б переформулювати відповіді кандидата для більшого ефекту, пов'язуючи їхній досвід з вимогами вакансії).
     Відповідай українською мовою, зберігаючи позитивний та підтримуючий тон.`;
-    
+
     const userQuery = `Ось опис вакансії:
     ---
     Посада: ${job.title}
@@ -160,9 +171,9 @@ const generateEdTechAnswer = async (courseContext: string, userQuestion: string)
 
 const generateJobFitAnalysis = async (veteranProfile: string, jobDescription: string): Promise<string> => {
     const systemPrompt = "Ти — підбадьорливий AI-кар'єрний тренер для ветеранів, які переходять до цивільної роботи. Твоє завдання — проаналізувати навички ветерана та опис вакансії, а потім написати короткий, позитивний підсумок (3-4 пункти у форматі Markdown), пояснюючи, чому ветеран є сильним кандидатом. Зосередься на навичках, що передаються. Використовуй підтримуючий та мотиваційний тон. Відповідай українською мовою.";
-    
+
     const userQuery = `Профіль ветерана:\n---\n${veteranProfile}\n---\n\nОпис вакансії:\n---\n${jobDescription}\n---\n\nПроаналізуй відповідність та надай підсумок.`;
-    
+
     try {
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
