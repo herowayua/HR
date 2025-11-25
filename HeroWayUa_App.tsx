@@ -833,12 +833,16 @@ const HeroWayUa_App = () => {
                     finalRole = 'admin';
                 }
 
-                if (docSnap.exists() && docSnap.data().role && finalRole !== 'admin') {
-                    // Якщо профіль вже є і це не адмін (адмін може перезаписати роль для тесту, але тут ми просто логінимось)
-                    setUserRole(docSnap.data().role);
+                if (docSnap.exists()) {
+                    // Якщо профіль вже є, оновлюємо роль на ту, яку обрав користувач
+                    // Це дозволяє перемикатися між ролями (Ветеран <-> Рекрутер) для одного акаунту
+                    if (docSnap.data().role !== finalRole) {
+                        await setDoc(profileRef, { role: finalRole }, { merge: true });
+                    }
+                    setUserRole(finalRole);
                     setUserName(docSnap.data().fullName || user.displayName);
                 } else {
-                    // Створюємо/Оновлюємо профіль
+                    // Створюємо новий профіль
                     const newProfileData = {
                         uid: user.uid,
                         role: finalRole,
@@ -846,7 +850,6 @@ const HeroWayUa_App = () => {
                         email: adminData?.email || user.email,
                         createdAt: new Date().toISOString(),
                     };
-                    // Якщо це адмін, примусово оновлюємо роль в базі
                     await setDoc(profileRef, newProfileData, { merge: true });
 
                     setUserRole(finalRole);
